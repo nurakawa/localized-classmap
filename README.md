@@ -3,7 +3,7 @@
 This repository contains the implementation of the localized class map, a tool
 for visualizing classification results. It also includes some examples using benchmark datasets, found in the folder "examples."
 
-The localized class map is an extension of the class map of [Raymaekers, Rousseeuw and Hubert (2021)](doi:10.1080/00401706.2021.1927849), which is available on CRAN as R 
+The localized class map is an extension of the class map of [Raymaekers, Rousseeuw and Hubert (2021)][1], which is available on CRAN as R 
 package `classmap`. By modifying the definition of _farness_ to use local neighborhood distances, the localized classmap can be used with any classifier.  
 
 The implementation of the localized class map is made to be compatible with `caret`. A user first trains a model in `caret`, then inputs it directly into `plotClassMap()` to visualize the results. See `examples/example-iris.R` for a simple example.  
@@ -17,7 +17,7 @@ shows where the classifier has success and challenges.
 However, we do not have an idea as to _why_ the classifier has difficulty in 
 some cases. Is it because of issues with the data? Or, is it because the classifier is not well-suited for the data?
 
-The class map of [Raymaekers, Rousseeuw and Hubert (2021)](doi:10.1080/00401706.2021.1927849), implemented in R package `classmap` gives insight into the behavior of the classifier by visualizing the data _from the perspective of the classifier_. The class map shows a view of the probabilities assigned to each object by the classifier, and of how far an object lies from its class. 
+The class map of [Raymaekers, Rousseeuw and Hubert (2021)][1], implemented in R package `classmap` gives insight into the behavior of the classifier by visualizing the data _from the perspective of the classifier_. The class map shows a view of the probabilities assigned to each object by the classifier, and of how far an object lies from its class. 
 
 The __localized class map__ adapts the class map to consider both the perspective of the classifier and the data, separately. We keep the y-axis of the class map, which shows a classifier's idea of where an object lies in its class. On the x-axis, we display _localized farness_, which uses local qualities of the data to assess where an object lies in the data space. This shows a picture of how the classifier performs with respect to the structure of the data.
 
@@ -42,3 +42,6 @@ The localized class maps show a story that corresponds with what we see in the t
 
 The localized class maps reveal that the classifier has difficulty discerning points that are at the boundary between classes versicolor and virginica. The misclassified versicolor point lies quite far from its class, making it generally harder to classify correctly. The misclassified virginica point has a localized farness of 0.5, meaning that it lies in between two classes; this also indicates challenge for a classifier.
 Overall, the classifier seems well-suited to the data, since it only misclassifies challening points.
+
+
+[1]: https://arxiv.org/abs/2007.14495
