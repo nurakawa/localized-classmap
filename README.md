@@ -23,17 +23,14 @@ The __localized class map__ adapts the class map to consider both the perspectiv
 
 To get an idea of the structure of the iris dataset, let's look at a t-SNE embeddings plot:
 
-<center>
-![](img/iris-tsne.png)
-</center>
+![](img/iris-tsne.png?raw=true)
 
 We notice that the class setosa is well-separated from the other two classes. Classes virginica and versicolor have a bit of overlap. 
 
 We use a Support Vector Machine with a linear kernel to classify the data, obtaining a 96% overall accuracy. Let's use localized class maps to visualize the results:
 
-<center>
-![](img/iris-localized-class-maps.png)
-</center>
+![](img/iris-localized-class-maps.png?raw=true)
+
 
 The plots display the localized class map of points whose given labels are versicolor, setosa and virginica. The points are colored by the prediction of the classifier. 
 
