@@ -1,21 +1,18 @@
-# Localized Class Map
+# Localized Class Map: Model-Agnostic Local Explanations of Classification Algorithms
 
 This repository contains the implementation of the localized class map, a tool
 for visualizing classification results. It also includes some examples using benchmark datasets, found in the folder "examples."
 
 The localized class map is an extension of the class map of [Raymaekers, Rousseeuw and Hubert (2021)][1], which is available on CRAN as R 
-package `classmap`. The class map is a visualization tool for local explanations of classification algorithms. It explains individual predictions of a classifier by plotting the classifier's view of the predictions. The localized  class map modifies one of the axes of the class map, resulting in a local explanation method that is model-agnostic; it can be used for almost any classifier.
+package `classmap`. The class map is a visualization tool for local explanations of classification algorithms. It plots the classifier's view of the predictions, allowing a user to understand how the classifier sees data. The localized  class map modifies one of the axes of the class map, resulting in a local explanation method that can be used for almost any classifier.
 
-The implementation of the localized class map is made to be compatible with `caret`. A user first trains a model in `caret`, then inputs it directly into `plotClassMap()` to visualize the results. See `examples/example-iris.R` for a simple example.  
+The implementation of the localized class map is made to be compatible with `caret`. A user first trains a classification model in `caret`, then inputs it directly into `plotClassMap()` to visualize the results. See `examples/example-iris.R` for a simple example.  
 
 ## Example: Classification of the Iris Dataset
 
-In the example `examples/example-iris.R`, we use a Support Vector Machine with 
-a linear kernel to classify the iris dataset. The iris dataset is a popular benchmark dataset that contains measurements describing three types of iris flowers: virginica, setosa and versicolor. The classification goal is to identify the species of teh flower. After training a classifier, we can get information about its performance, such as the accuracy (here it was 96%) and a confusion matrix, which
-shows where the classifier has success and challenges. 
+In the example `examples/example-iris.R`, we use a Support Vector Machine with a linear kernel to classify the iris dataset. The iris dataset is a popular benchmark dataset that contains measurements describing three types of iris flowers: virginica, setosa and versicolor. The classification goal is to identify the species of the flower. After training a classifier, we can get information about its performance, such as the accuracy (here it was 96%) and a confusion matrix, which shows where the classifier has success and challenges. 
 
-However, we do not have an idea as to _why_ the classifier has difficulty in 
-some cases. Is it because of issues with the data? Or, is it because the classifier is not well-suited for the data?
+However, we do not have an idea as to _why_ the classifier has difficulty in some cases. Is it because of issues with the data? Or, is it because the classifier is not well-suited for the data?
 
 The class map of [Raymaekers, Rousseeuw and Hubert (2021)][1], implemented in R package `classmap` gives insight into the behavior of the classifier by visualizing the data _from the perspective of the classifier_. The class map shows a view of the probabilities assigned to each object by the classifier, and of how far an object lies from its class. 
 
