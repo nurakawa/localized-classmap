@@ -4,7 +4,7 @@ This repository contains the implementation of the localized class map, a tool
 for visualizing classification results. It also includes some examples using benchmark datasets, found in the folder "examples."
 
 The localized class map is an extension of the class map of [Raymaekers, Rousseeuw and Hubert (2021)][1], which is available on CRAN as R 
-package `classmap`. By modifying the definition of _farness_ to use local neighborhood distances, the localized classmap can be used with any classifier.  
+package `classmap`. The class map is a visualization tool for local explanations of classification algorithms. It explains individual predictions of a classifier by plotting the classifier's view of the predictions. The localized  class map modifies one of the axes of the class map, resulting in a local explanation method that is model-agnostic; it can be used for almost any classifier.
 
 The implementation of the localized class map is made to be compatible with `caret`. A user first trains a model in `caret`, then inputs it directly into `plotClassMap()` to visualize the results. See `examples/example-iris.R` for a simple example.  
 
