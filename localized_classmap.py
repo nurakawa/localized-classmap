@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+import mplcursors
 import numpy as np
 from sklearn.neighbors import KDTree
 from sklearn.metrics import accuracy_score
@@ -21,14 +22,17 @@ def compPAC(model, X, y):
     PAC = np.array([0.0]*n) # initialize PAC array
     nlab = len(np.unique(y)) # number of classes
 
+    print(nlab)
+
     # get fitted model probabilities
     model_probs = model.predict_proba(X)
 
     # case: two classes
     if nlab == 2:
-        altint = 1 - yint # yint will take values 0 or 1
+        altint = 1 - y # y will take values 0 or 1
         for i in range(n):
             PAC[i] = model_probs[i, altint[i]]
+        return PAC
 
     # case: more than two classes
     ptrue = np.array([0.0]*n) # array containing probability an item belongs to its true class
@@ -81,12 +85,12 @@ def compLocalFarness(X, y, k, metric='euclidean'):
 
 def plotExplanations(model, X, y, cl, k=10, annotate=False):
     """
-    :param model: fitted sklearn model
-    :param X: data for the model to make predictions
-    :param y: corresponding labels to X
-    :param cl: class, must be one of the classes in y
-    :param k: parameter for localized farness. Number of nearest neighbors
-    :return: localized class map of model X for elements of class cl in data X
+    :param model: 	fitted sklearn model
+    :param X: 		data for the model to make predictions
+    :param y: 		corresponding labels to X
+    :param cl: 	class, must be one of the classes in y
+    :param k: 		parameter for localized farness. Number of nearest neighbors
+    :return: 		localized class map of model X for elements of class cl in data X
     """
 
     # to rescale LF for plot, we use qfunc,
