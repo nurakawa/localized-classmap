@@ -1,5 +1,11 @@
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
 import numpy as np
 from sklearn.neighbors import KDTree
+from sklearn.metrics import accuracy_score
+from scipy.stats import norm
+
 
 def compPAC(model, X, y):
     """
@@ -73,6 +79,85 @@ def compLocalFarness(X, y, k, metric='euclidean'):
     local_farness = np.abs(np.round(local_farness, 4))
     return local_farness
 
-def plotExplanations(model, X, y, k):
-    pass
+def plotExplanations(model, X, y, cl, k=10):
+    """
+    :param model: fitted sklearn model
+    :param X: data for the model to make predictions
+    :param y: corresponding labels to X
+    :param cl: class, must be one of the classes in y
+    :param k: parameter for localized farness. Number of nearest neighbors
+    :return: localized class map of model X for elements of class cl in data X
+    """
+
+    # to rescale LF for plot, we use qfunc,
+    # quantile function of N(0,1) restricted to [0,a]
+    qfunc = lambda x : abs(norm.ppf(x*(norm.pdf(4) - 0.5) + 0.5))
+
+    # predictions from the model. We color the points by their predicted
+    # class
+    model_preds = model.predict(X)
+    # accacy
+    model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),4)
+    class_acc = np.round(accuracy_score(y_true=y[y == cl],
+                               y_pred=model_preds[y == cl]), 4)
+
+    # compute PAC and LF
+    PAC = compPAC(model, X, y)
+    LF = compLocalFarness(X, y, k, metric='euclidean')
+
+    # select the PAC of elements in specified class
+    PAC_cl = PAC[y == cl]
+
+    # rescale LF for view, select it for elements in specified class
+    aLF_cl = qfunc(LF[y == cl])
+
+    # get colors
+    # for now using Tableau colors palette, which is limited to 10 colors
+    nlab = len(np.unique(y))
+    palette = list(mcolors.TABLEAU_COLORS.keys())
+    colors = [palette[i] for i in model_preds[y == cl]]
+
+    # initialize plot
+
+    # plot points colored by predicted class
+    plt.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+
+    # add title and accuracy information
+    plt.suptitle("Localized Class Map, class " + str(cl))#+ '\n' +
+    plt.title('Model Accuracy: ' + str(model_acc*100) + '% ' +
+                 'Class Accuracy: ' + str(class_acc*100)+'%',
+              fontsize=10)
+
+    # x-axis
+    plt.xlim(-0.05, qfunc(1)+0.01)
+    plot_probs = np.array([0, 0.5, 0.75, 0.9, 0.99, 0.999, 1])
+    plt.xticks(qfunc(plot_probs), plot_probs)
+    plt.xlabel('Localized Farness')
+
+    # y-axis
+    plt.ylim(-0.01,1.01)
+    plt.yticks([0,0.25,0.5,0.75,1.0], [0,0.25,0.5,0.75,1.0])
+    plt.ylabel("Pr[Alternative Class]")
+
+    # add vertical line
+    plt.axvline(x=qfunc(0.99), ls=':', color='grey')
+
+    # add horizontal line
+    plt.axhline(y=0.5, ls=':', color='grey')
+
+    # add legend
+    ptchs = []
+    for c in range(nlab):
+        ptchs.append(mpatches.Patch(color=palette[c],
+                                    label=c))
+    plt.legend(handles=ptchs,
+               loc=0,
+               title='Labels')
+    plt.rcParams["legend.fontsize"] = 6
+
+    plt.show()
+
+    return
+
+
 
