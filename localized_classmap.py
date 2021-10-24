@@ -79,7 +79,7 @@ def compLocalFarness(X, y, k, metric='euclidean'):
     local_farness = np.abs(np.round(local_farness, 4))
     return local_farness
 
-def plotExplanations(model, X, y, cl, k=10):
+def plotExplanations(model, X, y, cl, k=10, annotate=False):
     """
     :param model: fitted sklearn model
     :param X: data for the model to make predictions
@@ -154,6 +154,15 @@ def plotExplanations(model, X, y, cl, k=10):
                loc=0,
                title='Labels')
     plt.rcParams["legend.fontsize"] = 6
+
+    # annotations
+    labels = np.array(['['+str(i)+']' for i in range(len(y))])
+    labels = labels[y == cl]
+
+    if annotate:
+        for i in range(len(PAC_cl)):
+            if PAC_cl[i] >= 0.5:
+                plt.annotate(labels[i], (aLF_cl[i], PAC_cl[i]))
 
     plt.show()
 
