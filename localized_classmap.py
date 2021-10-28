@@ -1,7 +1,7 @@
+# load libraries
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
-import mplcursors
 import numpy as np
 from sklearn.neighbors import KDTree
 from sklearn.metrics import accuracy_score
@@ -13,7 +13,7 @@ def compPAC(model, X, y):
     :param model: sklearn model fitted to training data.
                   model must have "probability=True" when initialized.
     :param X:     dataset for prediction, usually a held-out test set
-    :param y:     labels corresponding to X
+    :param y:     labels corresponding to X; must be numpy array
     :return:      Probability of Alternative Classification (PAC) from the trained classifier
     """
 
@@ -21,8 +21,6 @@ def compPAC(model, X, y):
     n = X.shape[0] # number of data points in X
     PAC = np.array([0.0]*n) # initialize PAC array
     nlab = len(np.unique(y)) # number of classes
-
-    print(nlab)
 
     # get fitted model probabilities
     model_probs = model.predict_proba(X)
@@ -58,7 +56,10 @@ def compLocalFarness(X, y, k, metric='euclidean'):
 
     # find nearest neighbors with KD Tree
     kdt = KDTree(X, metric=metric)
+    print('Searching for ' + str(k) + ' nearest neighbors for ' + str(X.shape[0]) +
+        ' points. This could take some time!')
     dist, ind = kdt.query(X, k=k) # get the nearest neighbor distances and indices
+    print('Nearest neighbor search complete !')
 
     # array of epsilon_i (widths of epanechnikov kernels)
     epislon_arr = [dist[i][(k-1)] for i in range(len(dist))]
@@ -85,12 +86,12 @@ def compLocalFarness(X, y, k, metric='euclidean'):
 
 def plotExplanations(model, X, y, cl, k=10, annotate=False):
     """
-    :param model: 	fitted sklearn model
-    :param X: 		data for the model to make predictions
-    :param y: 		corresponding labels to X
-    :param cl: 	class, must be one of the classes in y
-    :param k: 		parameter for localized farness. Number of nearest neighbors
-    :return: 		localized class map of model X for elements of class cl in data X
+    :param model: fitted sklearn model
+    :param X: data for the model to make predictions
+    :param y: corresponding labels to X
+    :param cl: class, must be one of the classes in y
+    :param k: parameter for localized farness. Number of nearest neighbors
+    :return: localized class map of model X for elements of class cl in data X
     """
 
     # to rescale LF for plot, we use qfunc,
@@ -139,7 +140,7 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False):
     plt.xlabel('Localized Farness')
 
     # y-axis
-    plt.ylim(-0.01,1.01)
+    plt.ylim(-0.01,1.05)
     plt.yticks([0,0.25,0.5,0.75,1.0], [0,0.25,0.5,0.75,1.0])
     plt.ylabel("Pr[Alternative Class]")
 
@@ -156,7 +157,7 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False):
                                     label=c))
     plt.legend(handles=ptchs,
                loc=0,
-               title='Labels')
+               title='Predicted Class')
     plt.rcParams["legend.fontsize"] = 6
 
     # annotations
@@ -165,8 +166,8 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False):
 
     if annotate:
         for i in range(len(PAC_cl)):
-            if PAC_cl[i] >= 0.5:
-                plt.annotate(labels[i], (aLF_cl[i], PAC_cl[i]))
+            if (aLF_cl[i] >= qfunc(0.75)):
+                plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=6)
 
     plt.show()
 
