@@ -20,15 +20,15 @@ no_of_different_labels = 10 #  i.e. 0, 1, 2, 3, ..., 9
 image_pixels = image_size * image_size
 
 # load data
-data_path = ""
+data_path = "data/"
 train_data = np.loadtxt(data_path + "mnist_train.csv",delimiter=",")
 test_data = np.loadtxt(data_path + "mnist_test.csv",delimiter=",")
 
-train_imgs = np.asfarray(train_data[:, 1:])
-test_imgs = np.asfarray(test_data[:, 1:])
+train_imgs = np.asarray(train_data[:, 1:])
+test_imgs = np.asarray(test_data[:, 1:])
 
-train_labels = np.asfarray(train_data[:, :1])
-test_labels = np.asfarray(test_data[:, :1])
+train_labels = np.asarray(train_data[:, :1])
+test_labels = np.asarray(test_data[:, :1])
 
 # reshape the labels
 train_labels = train_labels.reshape(-1)
@@ -42,11 +42,15 @@ test_labels = test_labels.astype(int)
 train_data = train_imgs.reshape((len(train_imgs), -1))
 test_data = test_imgs.reshape(len(test_imgs), -1)
 
+print('Data preprocessing complete.')
+
 # Create a classifier: MLP
 clf = MLPClassifier(random_state=42, max_iter=150)
 
 # train the classifier
 clf.fit(train_data, train_labels)
+
+print('Classifier trained.')
 
 # make predictions
 predicted = clf.predict(X=test_data)
