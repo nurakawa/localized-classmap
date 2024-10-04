@@ -2,13 +2,16 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+
+import torch
+import torch.nn.functional as F
 import numpy as np
 from sklearn.neighbors import KDTree
 from sklearn.metrics import accuracy_score
 from scipy.stats import norm
 
 
-def compPAC(model, X, y):
+def compPAC(model, X, y, pytorch=False):
     """
     :param model: sklearn model fitted to training data.
                   model must have "probability=True" when initialized.
@@ -23,7 +26,12 @@ def compPAC(model, X, y):
     nlab = len(np.unique(y)) # number of classes
 
     # get fitted model probabilities
-    model_probs = model.predict_proba(X)
+    if pytorch:
+        probs_tensor = F.softmax(torch.from_numpy(predictions), dim=1)
+        model_probs = probs_tensor.numpy()
+
+    else:
+        model_probs = model.predict_proba(X)
 
     # case: two classes
     if nlab == 2:
@@ -31,6 +39,7 @@ def compPAC(model, X, y):
         for i in range(n):
             PAC[i] = model_probs[i, altint[i]]
         return PAC
+    
 
     # case: more than two classes
     ptrue = np.array([0.0]*n) # array containing probability an item belongs to its true class
@@ -45,7 +54,7 @@ def compPAC(model, X, y):
     return PAC
 
 
-def compLocalFarness(X, y, k, metric='euclidean'):
+def compLocalFarness(X, y, k, metric='euclidean', pytorch=False):
     """
     :param X:       dataset for prediction, should be the same as what was used for PAC
     :param y:       corresponding labels of X
@@ -53,6 +62,11 @@ def compLocalFarness(X, y, k, metric='euclidean'):
     :param metric:  distance metric for nearest neighbor search.
     :return:        localized farness computed from the data, independent of classifier
     """
+
+    if pytorch and (len(X.shape) > 2):
+        print('Flattening data')
+        X_flattened = X.reshape(len(X), -1)
+        X = X_flattened
 
     # find nearest neighbors with KD Tree
     kdt = KDTree(X, metric=metric)
@@ -84,7 +98,7 @@ def compLocalFarness(X, y, k, metric='euclidean'):
     local_farness = np.abs(np.round(local_farness, 4))
     return local_farness
 
-def plotExplanations(model, X, y, cl, k=10, annotate=False):
+def plotExplanations(model, X, y, cl, k=10, annotate=False, pytorch=False):
     """
     :param model: fitted sklearn model
     :param X: data for the model to make predictions
@@ -100,15 +114,22 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False):
 
     # predictions from the model. We color the points by their predicted
     # class
-    model_preds = model.predict(X)
-    # accacy
+    if pytorch:
+        model_preds_values = model.predict(X)
+        model_preds = np.argmax(predictions, axis=1)
+    else:
+        model_preds = model.predict(X)
+
+    # accuracy
     model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),4)
     class_acc = np.round(accuracy_score(y_true=y[y == cl],
                                y_pred=model_preds[y == cl]), 4)
 
     # compute PAC and LF
-    PAC = compPAC(model, X, y)
-    LF = compLocalFarness(X, y, k, metric='euclidean')
+    PAC = compPAC(model, X, y, pytorch)
+    print('PAC Computed')
+    LF = compLocalFarness(X, y, k, metric='euclidean', pytorch=pytorch)
+    print('LF Computed')
 
     # select the PAC of elements in specified class
     PAC_cl = PAC[y == cl]

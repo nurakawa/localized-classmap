@@ -2,3 +2,5 @@
 .vscode
 data
 env
+art
+__pycache__*
