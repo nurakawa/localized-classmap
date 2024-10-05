@@ -27,7 +27,9 @@ def compPAC(model, X, y, pytorch=False):
 
     # get fitted model probabilities
     if pytorch:
-        probs_tensor = F.softmax(torch.from_numpy(predictions), dim=1)
+        model_preds_values = model.predict(X)
+        #model_preds = np.argmax(model_preds_values, axis=1)
+        probs_tensor = F.softmax(torch.from_numpy(model_preds_values), dim=1)
         model_probs = probs_tensor.numpy()
 
     else:
@@ -64,7 +66,6 @@ def compLocalFarness(X, y, k, metric='euclidean', pytorch=False):
     """
 
     if pytorch and (len(X.shape) > 2):
-        print('Flattening data')
         X_flattened = X.reshape(len(X), -1)
         X = X_flattened
 
@@ -98,13 +99,16 @@ def compLocalFarness(X, y, k, metric='euclidean', pytorch=False):
     local_farness = np.abs(np.round(local_farness, 4))
     return local_farness
 
-def plotExplanations(model, X, y, cl, k=10, annotate=False, pytorch=False):
+def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=True, pytorch=False):
     """
     :param model: fitted sklearn model
     :param X: data for the model to make predictions
+    :param X_adv: dataset containing adversarial examples
+    :param y_adv: labels of adversarial examples
     :param y: corresponding labels to X
     :param cl: class, must be one of the classes in y
     :param k: parameter for localized farness. Number of nearest neighbors
+    :param annotate: if True, then identify adversarial examples
     :return: localized class map of model X for elements of class cl in data X
     """
 
@@ -112,30 +116,50 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False, pytorch=False):
     # quantile function of N(0,1) restricted to [0,a]
     qfunc = lambda x : abs(norm.ppf(x*(norm.pdf(4) - 0.5) + 0.5))
 
+    # keep track of which examples are adversarial
+    adversarial = np.array([False]*X.shape[0] + [True]*X_adv.shape[0])
+    
+    # combine the adversarial examples with the benign examples
+    X = np.concat((X, X_adv), axis=0)
+    y = np.concat((y, y_adv))
+    
     # predictions from the model. We color the points by their predicted
     # class
     if pytorch:
         model_preds_values = model.predict(X)
-        model_preds = np.argmax(predictions, axis=1)
+        model_preds = np.argmax(model_preds_values, axis=1)
     else:
         model_preds = model.predict(X)
+
+    # select the adversarial examples of elements in specified class
+    adversarial_cl = np.logical_and([y == cl], adversarial)[0]
+          
+
 
     # accuracy
     model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),4)
     class_acc = np.round(accuracy_score(y_true=y[y == cl],
                                y_pred=model_preds[y == cl]), 4)
-
+    
+    adv_acc = np.round(accuracy_score(y_true=y[adversarial_cl],
+                               y_pred=model_preds[adversarial_cl]), 4)
+    
+    print(f'Adversarial accuracy:', adv_acc,'%')
+    
+    
     # compute PAC and LF
-    PAC = compPAC(model, X, y, pytorch)
-    print('PAC Computed')
+    PAC = compPAC(model, X, y, pytorch=pytorch)
     LF = compLocalFarness(X, y, k, metric='euclidean', pytorch=pytorch)
-    print('LF Computed')
+    
 
     # select the PAC of elements in specified class
     PAC_cl = PAC[y == cl]
 
     # rescale LF for view, select it for elements in specified class
+    aLF = qfunc(LF)
     aLF_cl = qfunc(LF[y == cl])
+
+
 
     # get colors
     # for now using Tableau colors palette, which is limited to 10 colors
@@ -183,16 +207,26 @@ def plotExplanations(model, X, y, cl, k=10, annotate=False, pytorch=False):
 
     # annotations
     labels = np.array(['['+str(i)+']' for i in range(len(y))])
-    labels = labels[y == cl]
+
+    adversarial_examples = np.where(adversarial_cl)
+    print(adversarial_examples)
+    print(str(labels[adversarial_examples][0]))
 
     if annotate:
-        for i in range(len(PAC_cl)):
-            if (aLF_cl[i] >= qfunc(0.75)):
-                plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=6)
+        for i in adversarial_examples:
+            plt.plot(aLF[i], PAC[i], 'kx', markersize=12)
+            #plt.text(aLF[i], PAC[i], str(labels[i][0]),size=8)
+        # for i in range(len(PAC_cl)):
+        #     if adversarial_cl[i]:
+        #         print(labels[i])
+        #         print(PAC_cl[i])
+        #         plt.plot(aLF_cl[i], PAC_cl[i], 'bx')
+        #         if (PAC_cl[i] >= 0.5):
+        #             plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=8)
 
     plt.show()
-
     return
+
 
 
 
