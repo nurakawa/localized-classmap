@@ -99,6 +99,123 @@ def compLocalFarness(X, y, k, metric='euclidean', pytorch=False):
     local_farness = np.abs(np.round(local_farness, 4))
     return local_farness
 
+
+def plotExplanations(model, X,y, cl, k=10, annotate=True, pytorch=False):
+    """
+    :param model: fitted sklearn model
+    :param X: data for the model to make predictions
+    :param X_adv: dataset containing adversarial examples
+    :param y_adv: labels of adversarial examples
+    :param y: corresponding labels to X
+    :param cl: class, must be one of the classes in y
+    :param k: parameter for localized farness. Number of nearest neighbors
+    :param annotate: if True, then identify adversarial examples
+    :return: localized class map of model X for elements of class cl in data X
+    """
+
+    # to rescale LF for plot, we use qfunc,
+    # quantile function of N(0,1) restricted to [0,a]
+    qfunc = lambda x : abs(norm.ppf(x*(norm.pdf(4) - 0.5) + 0.5))
+    
+    # predictions from the model. We color the points by their predicted
+    # class
+    if pytorch:
+        model_preds_values = model.predict(X)
+        model_preds = np.argmax(model_preds_values, axis=1)
+    else:
+        model_preds = model.predict(X)
+
+    # accuracy
+    model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),2)
+    class_acc = np.round(accuracy_score(y_true=y[y == cl],
+                               y_pred=model_preds[y == cl]), 2)
+        
+    # compute PAC and LF
+    PAC = compPAC(model, X, y, pytorch=pytorch)
+    LF = compLocalFarness(X, y, k, metric='euclidean', pytorch=pytorch)
+    
+
+    # select the PAC of elements in specified class
+    PAC_cl = PAC[y == cl]
+
+    # rescale LF for view, select it for elements in specified class
+    aLF = qfunc(LF)
+    aLF_cl = qfunc(LF[y == cl])
+    
+    # get colors
+    # for now using Tableau colors palette, which is limited to 10 colors
+    nlab = len(np.unique(y))
+    palette = list(mcolors.TABLEAU_COLORS.keys())
+    colors = [palette[i] for i in model_preds[y == cl]]
+
+    # initialize plot
+
+    fig, ax = plt.subplots()
+
+    # add gray rectangle
+    rect = mpatches.Rectangle((-0.1, -0.1), qfunc(1)+0.1, 0.6, linewidth=0, 
+                             edgecolor=None, facecolor='lightgray', zorder=0)
+    # Add the rectangle to the plot
+    ax.add_patch(rect)
+
+
+    # plot points colored by predicted class
+    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+
+    # zero margins
+    ax.margins(0)
+
+    # add title and accuracy information
+    plt.suptitle("Localized Class Map, class " + str(cl))#+ '\n' +
+    plt.title('Model Accuracy: ' + str(model_acc*100) + '% ' +
+                'Class Accuracy: ' + str(class_acc*100)+'%',
+             fontsize=10)
+
+    # x-axis
+    plt.xlim(-0.05, qfunc(1)+0.01)
+    plot_probs = np.array([0, 0.5, 0.75, 0.9, 0.99, 0.999, 1])
+    plt.xticks(qfunc(plot_probs), plot_probs)
+    plt.xlabel('Localized Farness')
+
+    # y-axis
+    plt.ylim(-0.01,1.05)
+    plt.yticks([0,0.25,0.5,0.75,1.0], [0,0.25,0.5,0.75,1.0])
+    plt.ylabel("Pr[Alternative Class]")
+
+    # add vertical line
+    plt.axvline(x=qfunc(0.99), ls=':', color='grey')
+
+    # add horizontal line
+    plt.axhline(y=0.5, ls=':', color='grey')
+
+    # add horizontal line
+    plt.axhline(y=1, color='grey')
+
+    # add legend
+    ptchs = []
+    for c in range(nlab):
+        ptchs.append(mpatches.Patch(color=palette[c],
+                                    label=c))
+    plt.legend(handles=ptchs,
+               loc="best",
+               title='Predicted\nClass',
+               fontsize = 6,
+               title_fontsize=6,
+               edgecolor="black")
+    #plt.rcParams["legend.fontsize"] = 6
+
+    # annotations
+    labels = np.array(['['+str(i)+']' for i in range(len(y))])
+    labels = labels[y == cl]
+
+    if annotate:
+        for i in range(len(PAC_cl)):
+            if (aLF_cl[i] >= qfunc(0.75)):
+                plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=6)
+
+    plt.show()
+    return
+
 def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=True, pytorch=False):
     """
     :param model: fitted sklearn model
@@ -137,12 +254,12 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
 
 
     # accuracy
-    model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),4)
+    model_acc = np.round(accuracy_score(y_true=y,y_pred=model_preds),2)
     class_acc = np.round(accuracy_score(y_true=y[y == cl],
-                               y_pred=model_preds[y == cl]), 4)
+                               y_pred=model_preds[y == cl]), 2)
     
     adv_acc = np.round(accuracy_score(y_true=y[adversarial_cl],
-                               y_pred=model_preds[adversarial_cl]), 4)
+                               y_pred=model_preds[adversarial_cl]), 2)
     
     print(f'Adversarial accuracy:', adv_acc,'%')
     
@@ -158,8 +275,9 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     # rescale LF for view, select it for elements in specified class
     aLF = qfunc(LF)
     aLF_cl = qfunc(LF[y == cl])
-
-
+    largest_aLF = np.argsort(aLF_cl)[-5:][::-1]
+    print('Top 5 Far Examples:')
+    print(largest_aLF)
 
     # get colors
     # for now using Tableau colors palette, which is limited to 10 colors
@@ -169,14 +287,25 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
 
     # initialize plot
 
+    fig, ax = plt.subplots()
+
+    # add gray rectangle
+    rect = mpatches.Rectangle((-0.1, -0.1), qfunc(1)+0.1, 0.6, linewidth=0, edgecolor=None, facecolor='lightgray', zorder=0)
+    # Add the rectangle to the plot
+    ax.add_patch(rect)
+
+
     # plot points colored by predicted class
-    plt.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+
+    # zero margins
+    ax.margins(0)
 
     # add title and accuracy information
     plt.suptitle("Localized Class Map, class " + str(cl))#+ '\n' +
     plt.title('Model Accuracy: ' + str(model_acc*100) + '% ' +
-                 'Class Accuracy: ' + str(class_acc*100)+'%',
-              fontsize=10)
+                'Class Accuracy: ' + str(class_acc*100)+'%',
+             fontsize=10)
 
     # x-axis
     plt.xlim(-0.05, qfunc(1)+0.01)
@@ -195,15 +324,21 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     # add horizontal line
     plt.axhline(y=0.5, ls=':', color='grey')
 
+    # add horizontal line
+    plt.axhline(y=1, color='grey')
+
     # add legend
     ptchs = []
     for c in range(nlab):
         ptchs.append(mpatches.Patch(color=palette[c],
                                     label=c))
     plt.legend(handles=ptchs,
-               loc=0,
-               title='Predicted Class')
-    plt.rcParams["legend.fontsize"] = 6
+               loc="best",
+               title='Predicted\nClass',
+               fontsize = 6,
+               title_fontsize=6,
+               edgecolor="black")
+    #plt.rcParams["legend.fontsize"] = 6
 
     # annotations
     labels = np.array(['['+str(i)+']' for i in range(len(y))])
@@ -212,17 +347,10 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     print(adversarial_examples)
     print(str(labels[adversarial_examples][0]))
 
+    # mark the adversarial examples
     if annotate:
         for i in adversarial_examples:
-            plt.plot(aLF[i], PAC[i], 'kx', markersize=12)
-            #plt.text(aLF[i], PAC[i], str(labels[i][0]),size=8)
-        # for i in range(len(PAC_cl)):
-        #     if adversarial_cl[i]:
-        #         print(labels[i])
-        #         print(PAC_cl[i])
-        #         plt.plot(aLF_cl[i], PAC_cl[i], 'bx')
-        #         if (PAC_cl[i] >= 0.5):
-        #             plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=8)
+            ax.plot(aLF[i], PAC[i], 'k+', markersize=8)
 
     plt.show()
     return
