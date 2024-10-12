@@ -1,6 +1,10 @@
 .venv
 .vscode
 data
+img
+img/adversarial
+plots
 env
 art
 __pycache__*
+*.pdf

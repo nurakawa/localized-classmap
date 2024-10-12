@@ -41,7 +41,6 @@ def compPAC(model, X, y, pytorch=False):
         for i in range(n):
             PAC[i] = model_probs[i, altint[i]]
         return PAC
-    
 
     # case: more than two classes
     ptrue = np.array([0.0]*n) # array containing probability an item belongs to its true class
@@ -133,7 +132,6 @@ def plotExplanations(model, X,y, cl, k=10, annotate=True, pytorch=False):
     # compute PAC and LF
     PAC = compPAC(model, X, y, pytorch=pytorch)
     LF = compLocalFarness(X, y, k, metric='euclidean', pytorch=pytorch)
-    
 
     # select the PAC of elements in specified class
     PAC_cl = PAC[y == cl]
@@ -150,7 +148,7 @@ def plotExplanations(model, X,y, cl, k=10, annotate=True, pytorch=False):
 
     # initialize plot
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(5,5))
 
     # add gray rectangle
     rect = mpatches.Rectangle((-0.1, -0.1), qfunc(1)+0.1, 0.6, linewidth=0, 
@@ -160,7 +158,7 @@ def plotExplanations(model, X,y, cl, k=10, annotate=True, pytorch=False):
 
 
     # plot points colored by predicted class
-    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors, alpha=0.7, s=60)
 
     # zero margins
     ax.margins(0)
@@ -260,10 +258,7 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     
     adv_acc = np.round(accuracy_score(y_true=y[adversarial_cl],
                                y_pred=model_preds[adversarial_cl]), 2)
-    
-    print(f'Adversarial accuracy:', adv_acc,'%')
-    
-    
+        
     # compute PAC and LF
     PAC = compPAC(model, X, y, pytorch=pytorch)
     LF = compLocalFarness(X, y, k, metric='euclidean', pytorch=pytorch)
@@ -276,9 +271,7 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     aLF = qfunc(LF)
     aLF_cl = qfunc(LF[y == cl])
     largest_aLF = np.argsort(aLF_cl)[-5:][::-1]
-    print('Top 5 Far Examples:')
-    print(largest_aLF)
-
+    
     # get colors
     # for now using Tableau colors palette, which is limited to 10 colors
     nlab = len(np.unique(y))
@@ -296,7 +289,7 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
 
 
     # plot points colored by predicted class
-    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors)
+    ax.scatter(y=PAC_cl, x=aLF_cl, c=colors, alpha=0.7, s=60)
 
     # zero margins
     ax.margins(0)
@@ -344,9 +337,7 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     labels = np.array(['['+str(i)+']' for i in range(len(y))])
 
     adversarial_examples = np.where(adversarial_cl)
-    print(adversarial_examples)
-    print(str(labels[adversarial_examples][0]))
-
+    
     # mark the adversarial examples
     if annotate:
         for i in adversarial_examples:
