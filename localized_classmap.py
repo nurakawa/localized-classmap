@@ -210,6 +210,9 @@ def plotExplanations(model, X,y, cl, k=10, annotate=True, pytorch=False):
         for i in range(len(PAC_cl)):
             if (aLF_cl[i] >= qfunc(0.75)):
                 plt.text(aLF_cl[i], PAC_cl[i], labels[i],size=6)
+                plt.scatter(aLF_cl[i], PAC_cl[i], edgecolors='black', 
+                       facecolors='none', s=60, linewidth=1)
+
 
     plt.show()
     return
@@ -337,12 +340,13 @@ def plotExplanationsAdversarial(model, X, X_adv, y, y_adv, cl, k=10, annotate=Tr
     labels = np.array(['['+str(i)+']' for i in range(len(y))])
 
     adversarial_examples = np.where(adversarial_cl)
+
     
     # mark the adversarial examples
     if annotate:
         for i in adversarial_examples:
-            ax.plot(aLF[i], PAC[i], 'k+', markersize=8)
-
+            ax.scatter(aLF[i], PAC[i], edgecolors='black', 
+                       facecolors='none', s=60, linewidth=1)
     plt.show()
     return
 
